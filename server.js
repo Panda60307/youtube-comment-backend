@@ -7,7 +7,11 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Middleware
-app.use(cors()); // 允許跨域請求
+app.use(cors({
+    origin: [/https:\/\/.*\.youtube\.com/], // 允許所有 youtube.com 的子網域
+    methods: ['GET', 'POST', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(express.json());
 
 // Routes
