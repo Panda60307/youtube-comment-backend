@@ -130,4 +130,59 @@ router.post('/analyze', verifyToken, async (req, res) => {
     }
 });
 
+/**
+ * GET /api/status
+ * Header: Authorization: Bearer <Firebase_ID_Token>
+ */
+router.get('/status', verifyToken, async (req, res) => {
+    const { uid, email } = req.user;
+    console.log(`[Status Check] User: ${email} (${uid})`);
+
+    try {
+        const userRef = db.collection('users').doc(uid);
+        const doc = await userRef.get();
+
+        const now = new Date();
+        const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+
+        if (!doc.exists) {
+            // 如果連紀錄都沒有，這真的是新帳號，但我們不要讓它在顯示時產生誤導
+            // 回傳 0 次已用，5 次上限
+            return res.json({
+                subscriptionStatus: 'free',
+                usageCount: 0,
+                quotaLimit: 5,
+                remaining: 5
+            });
+        }
+
+        let userData = doc.data();
+
+        // 核心修正：強制檢查重置日期
+        if (userData.quotaResetDate && userData.quotaResetDate.toDate() < now) {
+            console.log(`[Status] resetting quota for ${email}`);
+            await userRef.update({
+                usageCount: 0,
+                quotaResetDate: Timestamp.fromDate(nextMonth)
+            });
+            userData.usageCount = 0;
+            userData.quotaResetDate = Timestamp.fromDate(nextMonth);
+        }
+
+        const remaining = Math.max(0, userData.quotaLimit - userData.usageCount);
+        console.log(`[Status Result] ${email}: ${userData.usageCount}/${userData.quotaLimit} (Rem: ${remaining})`);
+
+        return res.json({
+            subscriptionStatus: userData.subscriptionStatus || 'free',
+            usageCount: userData.usageCount,
+            quotaLimit: userData.quotaLimit,
+            remaining: remaining
+        });
+
+    } catch (e) {
+        console.error('Fetch Status Error:', e);
+        return res.status(500).json({ error: 'Database Error', details: e.message });
+    }
+});
+
 export default router;
