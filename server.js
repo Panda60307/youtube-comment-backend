@@ -6,6 +6,12 @@ import analyzeRoutes from './routes/analyze.js';
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// 全域請求日誌 (診斷用)
+app.use((req, res, next) => {
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+    next();
+});
+
 // Middleware
 app.use(cors({
     origin: '*',
