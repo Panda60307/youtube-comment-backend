@@ -8,9 +8,10 @@ const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(cors({
-    origin: [/https:\/\/.*\.youtube\.com/], // 允許所有 youtube.com 的子網域
+    origin: '*',
     methods: ['GET', 'POST', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    optionsSuccessStatus: 200 // 針對舊版瀏覽器或特定雲端負載平衡器
 }));
 app.use(express.json());
 
